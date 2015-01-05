@@ -72,7 +72,7 @@ public class GCMIntentService extends GCMBaseIntentService {
     @Override
     protected void onMessage(Context context, Intent intent) {
         Log.v(LOG_TAG, "Received onMessage call. Will now display a notification");
-        final String message = intent.getStringExtra("payload");
+        final String message = intent.getStringExtra("payload").replaceAll("[\r\n]+$", "");
         createAndSendNotification(IWearNotificationType.ANDROID, message);
     }
 
