@@ -1,0 +1,55 @@
+{
+  "style": "ListStyle",
+  "contentTitle": "IRS Tax filing deadline",
+  "contentText": "Wednesday, April 15",
+  "background": "turbotax",
+  "ListStyle": {
+    "icon": "ic_menu_tt",
+    "title": "Tap to take action!",
+    "label": "Tax Day",
+    "intentName": "com.intuitlabs.wear.voiceandchoice.ActionReceiver",
+    "items": [
+      {
+        "cmd": "Purchase Turbo Tax",
+        "key": 0
+      },
+      {
+        "cmd": "Create Event",
+        "key": 1
+      },
+      {
+        "cmd": "Remind me later",
+        "key": 2
+      },
+      {
+        "cmd": "Dismiss",
+        "key": 3
+      },
+      {
+        "cmd": "Web Site",
+        "key": 0
+      },
+      {
+        "cmd": "Create a Calendar Event",
+        "key": 1
+      },
+      {
+        "cmd": "Set an Alarm",
+        "key": 2
+      },
+      {
+        "cmd": "I don't pay taxes",
+        "key": 3
+      },
+      {
+        "cmd": "More Info",
+        "key": 0
+      },
+      {
+        "cmd": "Information",
+        "key": 0
+      }
+    ],
+    "visible": 4
+  }
+}

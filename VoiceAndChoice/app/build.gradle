@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 
+
 android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
@@ -27,3 +28,25 @@ dependencies {
     compile files('libs/gson-2.3.jar')
     compile files('libs/commons-codec-20041127.091804.jar')
 }
+android.applicationVariants.all { variant ->
+    def name = variant.buildType.name
+
+    if (name.equalsIgnoreCase("debug")) {
+        return; // Skip debug builds.
+    }
+    task("generate${variant.name}Javadoc", type: Javadoc) {
+        description "Generates Javadoc for $variant.name."
+        source = variant.javaCompile.source
+        ext.androidJar = "${android.sdkDirectory}/platforms/${android.compileSdkVersion}/android.jar"
+        classpath = files(variant.javaCompile.classpath.files) + files(ext.androidJar)
+        exclude '**/internal/**'
+        failOnError false
+        options.memberLevel = JavadocMemberLevel.PRIVATE
+        options.links("http://docs.oracle.com/javase/7/docs/api/");
+        options.links("http://developer.android.com/reference/");
+        options.bottom = "Copyright (c) 2015 - IntuitLabs. All rights reserved."
+        exclude '**/BuildConfig.java'
+        exclude '**/R.java'
+    }
+}
+

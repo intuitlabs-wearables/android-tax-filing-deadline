@@ -1,3 +1,9 @@
+///////////////////////////////////////////////////////////////////////////////////////////////
+//  Copyright (c) 1/2/15 Intuit Inc. All rights reserved. Unauthorized reproduction is a
+//  violation of applicable law. This material contains certain confidential and proprietary
+//  information and trade secrets of Intuit Inc.
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 package com.intuitlabs.wear.voiceandchoice;
 
 import android.content.Context;
@@ -12,44 +18,68 @@ import com.intuit.intuitwear.notifications.IWearNotificationType;
 import com.intuit.mobile.png.sdk.PushNotifications;
 import com.intuit.mobile.png.sdk.UserTypeEnum;
 
+/**
+ * GCMIntentService extends Google's {@link GCMBaseIntentService}, setting up the communication with
+ * the Push Notification Gateway. Here we are adding the registration with Intuit's Notification
+ * Server and also implement a few callbacks.
+ */
 public class GCMIntentService extends GCMBaseIntentService {
-    private static final String LOG_TAG = GCMIntentService.class.getName();
-    /**
-     * This is an example value. You will need to replace with your Google API's Project Number
-     */
-    private static final String GCM_PROJECT_NUMBER = "1024976853493";
-    /**
-     * This is an example value. You will need to replace with your PNG Sender ID
-     */
-    private static final String INTUIT_SENDER_ID = "91085311-58c4-4ad0-987c-03019cec72c7";
-    /**
-     * UserId - a value to identify the current user (e.g. user's mobile number, email address, Intuit Id, etc)
-     */
-    private static final String END_USER_ID = "Mickey Mouse";
-    /**
-     * User Groups - an optional list of group names to which the user may belong
-     */
-    private static final String[] END_USER_GROUPS = {"Characters", "Disney"};
-
+    private static final String LOG_TAG = GCMIntentService.class.getSimpleName();
 
     /**
-     * register the current user to receive notification on their device
+     * This method triggers the main registration flow. It should be called each
+     * time the application is started to ensure the app stays in sync with the
+     * Push Notification servers.
+     *
+     * @param context         {@link android.content.Context} Android Context
+     * @param receiver_id     {@link String} Type of userId, represents intuit id, Mobile Number, Email, uniquely identifies the user
+     * @param receiver_groups {@link String[]} The groups to which the userId may belong, allowing for groups messages
      */
-    protected static void register(final Context context) {
+    protected static void register(final Context context,
+                                   final String receiver_id,
+                                   final String[] receiver_groups) {
         PushNotifications.register(
                 context,
-                GCM_PROJECT_NUMBER,
-                END_USER_ID,
-                END_USER_GROUPS,
+                MainActivity.GCM_PROJECT_NUMBER,
+                receiver_id,
+                receiver_groups,
                 UserTypeEnum.OTHER,
-                INTUIT_SENDER_ID,
+                MainActivity.INTUIT_SENDER_ID,
                 false);
     }
 
-
+    /**
+     * Default Constructor, requires Google GCM PROJECT_NUMBER,
+     * which must be your GCM Project number and statically available.
+     */
     public GCMIntentService() {
-        super(GCMIntentService.GCM_PROJECT_NUMBER);
+        super(MainActivity.GCM_PROJECT_NUMBER);
     }
+
+    /*
+     * This callback method is invoked when GCM delivers a notification to the device.
+     *
+     * Assuming that the json encoded message is a valid (see IntuitWear JSONSchema) document,
+     * we acquire an instance of a {@link IWearNotificationSender.Factory} to create a NotificationSender,
+     * which will send the generated notification to the wearable device.
+     *
+     * @param context {@link Context} Application context
+     * @param intent {@link Intent} received with the push notification
+     */
+    @Override
+    protected void onMessage(final Context context, final Intent intent) {
+        Log.v(LOG_TAG, "Received onMessage call. Will now display a notification");
+        final String message = intent.getStringExtra("payload").replaceAll("[\r\n]+$", "");
+        final IWearNotificationSender.Factory iWearSender = IWearNotificationSender.Factory.getsInstance();
+        try {
+            IWearAndroidNotificationSender androidNotificationSender =
+                    (IWearAndroidNotificationSender) iWearSender.createNotificationSender(IWearNotificationType.ANDROID, this, message);
+            androidNotificationSender.sendNotification(this);
+        } catch (IntuitWearException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     /*
      * This callback method is invoked after a successful registration with GCM.
@@ -57,45 +87,31 @@ public class GCMIntentService extends GCMBaseIntentService {
      * The SDK will send the registrationId along with any user and userGroup mappings to the PNG servers.
      */
     @Override
-    protected void onRegistered(Context context, String regId) {
+    protected void onRegistered(final Context context, final String regId) {
         Log.i(LOG_TAG, "Received onRegistered call. Updating the PNG servers.");
         PushNotifications.updateServer(context, regId);
-
     }
 
-    /*
-     * This callback method is invoked when GCM delivers a notification to the device
-     * Here we are simply providing an example of how to display the notification to the user.
-     * There are many other implementation options.
-     * Older API versions of Android may need to use different classes and methods.
+    /**
+     * Callback called upon a GCM error.
+     *
+     * @param context {@link Context} Application context
+     * @param msg     {@link String} Error string
      */
     @Override
-    protected void onMessage(Context context, Intent intent) {
-        Log.v(LOG_TAG, "Received onMessage call. Will now display a notification");
-        final String message = intent.getStringExtra("payload").replaceAll("[\r\n]+$", "");
-        createAndSendNotification(IWearNotificationType.ANDROID, message);
+    protected void onError(final Context context, final String msg) {
+        Log.e(LOG_TAG, "Error related to GCM: " + msg);
     }
 
+    /**
+     * Callback called when device is unregistered from GCM.
+     *
+     * @param context {@link Context} Application context
+     * @param msg     Unregister message
+     */
     @Override
-    protected void onError(Context arg0, String arg1) {
-        Log.e(LOG_TAG, "Error related to GCM: " + arg1);
-    }
-
-    @Override
-    protected void onUnregistered(Context arg0, String arg1) {
+    protected void onUnregistered(final Context context, final String msg) {
         Log.i(LOG_TAG, "Received unregistered call");
-    }
-
-    private void createAndSendNotification(IWearNotificationType type, String tstJson) {
-        // Create and send the notification from the test json file.
-        IWearNotificationSender.Factory iWearSender = IWearNotificationSender.Factory.getsInstance();
-        IWearAndroidNotificationSender androidNotificationSender;
-        try {
-            androidNotificationSender = (IWearAndroidNotificationSender) iWearSender.createNotificationSender(type, this, tstJson);
-            androidNotificationSender.sendNotification(this);
-        } catch (IntuitWearException e) {
-            e.printStackTrace();
-        }
     }
 }
 
