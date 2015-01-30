@@ -43,7 +43,7 @@ android.applicationVariants.all { variant ->
         failOnError false
         options.memberLevel = JavadocMemberLevel.PRIVATE
         options.links("http://docs.oracle.com/javase/7/docs/api/");
-        options.links("http://developer.android.com/reference/");
+        options.links("http://d.android.com/reference/");
         options.bottom = "Copyright (c) 2015 - IntuitLabs. All rights reserved."
         exclude '**/BuildConfig.java'
         exclude '**/R.java'

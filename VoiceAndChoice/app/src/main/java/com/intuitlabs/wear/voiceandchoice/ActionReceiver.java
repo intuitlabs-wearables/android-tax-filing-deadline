@@ -42,11 +42,11 @@ import java.util.Calendar;
  * <p>
  * The fully qualified class-name of this {@link BroadcastReceiver} needs to be mentioned in the
  * JSON document inside the ListStyle, that gets pushed to the phone, like here:
- * <p>
+ * </p><p>
  * "ListStyle": {
  * "intentName": "com.intuitlabs.wear.voiceandchoice.ActionReceiver",
  * ...
- * </p>
+ * </p><p>
  * If the user engages with the notification and select one of the list-items,
  * either via touch or speech-input, this BroadcastReceiver's onReceive methods get eventually called,
  * with the speech-recognition already performed.
