@@ -33,9 +33,11 @@ import android.support.v4.app.RemoteInput;
 import android.util.Log;
 
 import com.intuit.intuitwear.notifications.AndroidNotification;
+import com.intuit.intuitwear.notifications.ListStyle;
 import com.intuit.intuitwear.utils.PhoneticSearch;
 
 import java.util.Calendar;
+import java.util.Map;
 
 /**
  * <code>BroadcastReceiver</code> to handle user requests, entered on the wearable.
@@ -73,8 +75,10 @@ public class ActionReceiver extends BroadcastReceiver {
         /* The user's choice, either directly selected or as a speech recognition result. */
         final String reply = remoteInput != null ? remoteInput.getCharSequence(AndroidNotification.EXTRA_VOICE_REPLY).toString() : "";
 
-        /* The integer value, associated with the command string in the original json document that was used to generate the notification */
-        final int selectedId = PhoneticSearch.MATCH(context, reply);
+         /* The integer value, associated with the command string in the original json document that was used to generate the notification */
+        @SuppressWarnings("unchecked")
+        final Map<String, Integer> cmdkeys = (Map<String, Integer>) ListStyle.readFromSharedPreference(context);
+        final int selectedId = new PhoneticSearch<>(cmdkeys).match(reply);
 
         Log.v(LOG_TAG, "Selection / Speech Recognition result: " + reply);
         Log.i(LOG_TAG, "Selection / Selected ID " + selectedId);

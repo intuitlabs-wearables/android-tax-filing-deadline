@@ -44,12 +44,11 @@ public class MainActivity extends Activity {
     /**
      * This is an example value. You will need to replace with your Google API's Project Number
      */
-    static final String GCM_PROJECT_NUMBER = "1024976853493"; //Todo replace with empty string before publishing into public github repo
+    static final String GCM_PROJECT_NUMBER = ""; //Todo replace the empty string w/ your GCM Project Number
     /**
      * This is an example value. You will need to replace with your PNG Sender ID
      */
-    static final String INTUIT_SENDER_ID = "91085311-58c4-4ad0-987c-03019cec72c7"; //Todo replace with empty string before publishing into public github repo
-    private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    static final String INTUIT_SENDER_ID = ""; //Todo replace the empty string w/ your Intuit Sender ID
 
     /**
      * {@inheritDoc}
@@ -57,6 +56,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Todo come up w/ your own userid / usergroup schema
         GCMIntentService.register(this, "Mickey Mouse", new String[]{"Characters", "Disney"});
         finish();
     }

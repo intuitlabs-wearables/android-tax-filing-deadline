@@ -31,8 +31,9 @@ import com.intuit.intuitwear.exceptions.IntuitWearException;
 import com.intuit.intuitwear.notifications.IWearAndroidNotificationSender;
 import com.intuit.intuitwear.notifications.IWearNotificationSender;
 import com.intuit.intuitwear.notifications.IWearNotificationType;
-import com.intuit.mobile.png.sdk.PushNotifications;
+import com.intuit.mobile.png.sdk.PushNotificationsV2;
 import com.intuit.mobile.png.sdk.UserTypeEnum;
+import com.intuit.mobile.png.sdk.callback.RegisterUserCallback;
 
 /**
  * GCMIntentService extends Google's {@link GCMBaseIntentService}, setting up the communication with
@@ -41,28 +42,10 @@ import com.intuit.mobile.png.sdk.UserTypeEnum;
  */
 public class GCMIntentService extends GCMBaseIntentService {
     private static final String LOG_TAG = GCMIntentService.class.getSimpleName();
+    private static final String REG_URL = "https://png.d2d.msg.intuit.com";
 
-    /**
-     * This method triggers the main registration flow. It should be called each
-     * time the application is started to ensure the app stays in sync with the
-     * Push Notification servers.
-     *
-     * @param context         {@link android.content.Context} Android Context
-     * @param receiver_id     {@link String} Type of userId, represents intuit id, Mobile Number, Email, uniquely identifies the user
-     * @param receiver_groups {@link String[]} The groups to which the userId may belong, allowing for groups messages
-     */
-    protected static void register(final Context context,
-                                   final String receiver_id,
-                                   final String[] receiver_groups) {
-        PushNotifications.register(
-                context,
-                MainActivity.GCM_PROJECT_NUMBER,
-                receiver_id,
-                receiver_groups,
-                UserTypeEnum.OTHER,
-                MainActivity.INTUIT_SENDER_ID,
-                false);
-    }
+    private static String userid;
+    private static String[] groups;
 
     /**
      * Default Constructor, requires Google GCM PROJECT_NUMBER,
@@ -72,15 +55,65 @@ public class GCMIntentService extends GCMBaseIntentService {
         super(MainActivity.GCM_PROJECT_NUMBER);
     }
 
-    /*
-     * This callback method is invoked when GCM delivers a notification to the device.
+    /**
+     * Register with GCM, which will eventually trigger {@link #onRegistered} to be called.
      *
+     * @param context {@link Context} Application context
+     * @param userid  {@link String} how your app refers to this user
+     * @param groups  {@link String[]} may be null
+     */
+    protected static void register(final Context context, String userid, final String[] groups) {
+        GCMIntentService.userid = userid;
+        GCMIntentService.groups = groups;
+
+        PushNotificationsV2.URL_OVERRIDE = REG_URL;
+        PushNotificationsV2.Environment environment = PushNotificationsV2.Environment.SANDBOX;
+        PushNotificationsV2.initialize(MainActivity.INTUIT_SENDER_ID, MainActivity.GCM_PROJECT_NUMBER, environment);
+        PushNotificationsV2.setLogging(true);
+        PushNotificationsV2.registerForGCMNotifications(context);
+    }
+
+    /**
+     * Google will call this method, providing you a unique registrationId for this device.
+     * We recommended to save the registrationId to local preferences for later use.
+     * e.g. saveRegistrationId(registrationId);
+     *
+     * @param context        {@link Context} Application context
+     * @param registrationId {@link String} unique registrationId for this device
+     */
+    @Override
+    protected void onRegistered(final Context context, final String registrationId) {
+
+        PushNotificationsV2.registerUser(
+                this,
+                GCMIntentService.userid,
+                UserTypeEnum.OTHER,
+                GCMIntentService.groups,
+                registrationId,
+                new RegisterUserCallback() {
+
+
+                    @Override
+                    public void onUserRegistered() {
+                        Log.i(LOG_TAG, "Registration call to PNG servers was accepted");
+                    }
+
+                    @Override
+                    public void onError(String code, String description) {
+                        Log.i(LOG_TAG, String.format("Received error callback from PNG. Error code= %s, description= %s", code, description));
+                    }
+                });
+    }
+
+    /**
+     * This callback method is invoked when GCM delivers a notification to the device.
+     * <p/>
      * Assuming that the json encoded message is a valid (see IntuitWear JSONSchema) document,
      * we acquire an instance of a {@link IWearNotificationSender.Factory} to create a NotificationSender,
      * which will send the generated notification to the wearable device.
      *
      * @param context {@link Context} Application context
-     * @param intent {@link Intent} received with the push notification
+     * @param intent  {@link Intent} received with the push notification
      */
     @Override
     protected void onMessage(final Context context, final Intent intent) {
@@ -92,20 +125,8 @@ public class GCMIntentService extends GCMBaseIntentService {
                     (IWearAndroidNotificationSender) iWearSender.createNotificationSender(IWearNotificationType.ANDROID, this, message);
             androidNotificationSender.sendNotification(this);
         } catch (IntuitWearException e) {
-            e.printStackTrace();
+            Log.e(LOG_TAG, e.toString());
         }
-    }
-
-
-    /*
-     * This callback method is invoked after a successful registration with GCM.
-     * Here we are passing the new registrationId to the PNG SDK.
-     * The SDK will send the registrationId along with any user and userGroup mappings to the PNG servers.
-     */
-    @Override
-    protected void onRegistered(final Context context, final String regId) {
-        Log.i(LOG_TAG, "Received onRegistered call. Updating the PNG servers.");
-        PushNotifications.updateServer(context, regId);
     }
 
     /**
